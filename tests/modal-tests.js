@@ -100,17 +100,6 @@ describe('split modal', function() {
     modal = new SplitModal(app, trn, trn.splits);
   }
 
-  function toISODate(dt) {
-    return [dt.getFullYear(), pad2(dt.getMonth()+1), pad2(dt.getDate())].join('-');
-  }
-
-  function pad2(n) {
-    if (n < 10)
-      return `0${n}`;
-    else
-      return n;
-  }
-
   function $(sel) {
     return modal.el.querySelector(sel);
   }

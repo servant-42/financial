@@ -6,8 +6,9 @@ class YearView {
 
     // get the bounds of the data, so we know what prev/next links we can provide
     // TODO: make these global so we don't need to walk them all the time?
-    let earliest_date = app.transactions[0].date;
-    let latest_date = app.transactions[0].date;
+    let todays_date = toISODate(new Date());
+    let earliest_date = app.transactions[0]?.date || todays_date;
+    let latest_date = app.transactions[0]?.date || todays_date;
     for (let trn of app.transactions) {
       if (trn.date < earliest_date)
         earliest_date = trn.date;

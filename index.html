@@ -60,6 +60,70 @@
     app.navigate();
     document.body.appendChild(app.el);
     window.addEventListener('hashchange', app.onHashChange.bind(app));
+    
+    // special export handling code
+    document.addEventListener('keydown', (evt) => {
+      // do CSV export
+      if (evt.ctrlKey && evt.key == 'e') {
+        evt.preventDefault(); // Prevent the browser's default action (if any)
+
+        let month = new Date().getMonth() + 1;
+        let month_str = pad2(month);
+        let jan_trns = filterRecords(app.transactions, {month: `2026-${month_str}`, category_id: 2});
+
+        // TODO: add in pending transactions & the few relevant checking transactions
+
+        let days = [];
+        for (let day = 1; day <= 31; day++) {
+          let iso_date = `2026-${month_str}-${pad2(day)}`;
+          let trns = jan_trns.filter(trn => trn.date == iso_date);
+          let total = -sumAmounts(trns);
+          days.push({date: `${month_str}/${pad2(day)}/2026`, pending_amt: displayCents(0), total: displayCents(total)});
+        }
+        
+        let csv = toCSV(days);
+        let month_name = [null, 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][month];
+        downloadCSV(csv, `${month_name}-2026.csv`);
+      }   
+    });
+
+    function toCSV(arr) {
+      let headers = Object.keys(arr[0]);
+      arr = [headers].concat(arr);
+
+      return arr.map(item => {
+        return Object.values(item).map(value => {
+          // escape values containing commas or double quotes
+          if (typeof value == 'string' && (value.includes(',') || value.includes('"')))
+            return `"${value.replace(/"/g, '""')}"`;
+          
+          return value;
+        }).join(',');
+      }).join('\n');
+    }
+
+    function downloadCSV(csv_str, filename) {
+      // Create a Blob object with the CSV data and type
+      const blob = new Blob([csv_str], { type: 'text/csv;charset=utf-8;' });
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+
+      // Create a URL for the Blob object
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      
+      // Set the download attribute with the desired filename
+      link.setAttribute('download', filename);
+      
+      // Append link to body, click it, and remove it
+      document.body.appendChild(link); // Required for Firefox
+      link.click();
+      document.body.removeChild(link);
+      
+      // Free up the object URL after a short delay
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
   </script>
 </body>
 </html>

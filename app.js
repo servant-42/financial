@@ -9,58 +9,107 @@ class App {
 
     // legacy pseudo-transaction from old spreadsheets (really just month summaries per category)
     let trn_json = this.localStorage.getItem('transactions');
-    this.transactions = trn_json ? JSON.parse(trn_json) : [
-      {"id": "1", "date": "2024-09-01", "amount": 109590, "splits": [{"category_id": 0, "amount": 109590}]},
-      {"id": "2", "date": "2024-10-01", "amount": 174589, "splits": [{"category_id": 0, "amount": 174589}]},
-      {"id": "3", "date": "2024-11-01", "amount": 114460, "splits": [{"category_id": 0, "amount": 114460}]},
-      {"id": "4", "date": "2024-12-01", "amount": 164193, "splits": [{"category_id": 0, "amount": 164193}]},
-      {"id": "5", "date": "2025-01-01", "amount": 294205, "splits": [{"category_id": 0, "amount": 294205}]},
-      {"id": "6", "date": "2025-02-01", "amount": 211455, "splits": [{"category_id": 0, "amount": 211455}]},
-      {"id": "7", "date": "2025-03-01", "amount": 214717, "splits": [{"category_id": 0, "amount": 214717}]},
-      {"id": "8", "date": "2024-09-01", "amount": -3298, "splits": [{"category_id": 2, "amount": -3298}]},
-      {"id": "9", "date": "2024-10-01", "amount": -0, "splits": [{"category_id": 2, "amount": -0}]},
-      {"id": "10", "date": "2024-11-01", "amount": -7537, "splits": [{"category_id": 2, "amount": -7537}]},
-      {"id": "11", "date": "2024-12-01", "amount": -3298, "splits": [{"category_id": 2, "amount": -3298}]},
-      {"id": "12", "date": "2025-01-01", "amount": -7538, "splits": [{"category_id": 2, "amount": -7538}]},
-      {"id": "13", "date": "2025-02-01", "amount": -1884, "splits": [{"category_id": 2, "amount": -1884}]},
-      {"id": "14", "date": "2025-03-01", "amount": -4711, "splits": [{"category_id": 2, "amount": -4711}]},
-      {"id": "15", "date": "2024-09-01", "amount": -0, "splits": [{"category_id": 3, "amount": -0}]},
-      {"id": "16", "date": "2024-10-01", "amount": -92649, "splits": [{"category_id": 3, "amount": -92649}]},
-      {"id": "17", "date": "2024-11-01", "amount": -142252, "splits": [{"category_id": 3, "amount": -142252}]},
-      {"id": "18", "date": "2024-12-01", "amount": -75635, "splits": [{"category_id": 3, "amount": -75635}]},
-      {"id": "19", "date": "2025-01-01", "amount": -55908, "splits": [{"category_id": 3, "amount": -55908}]},
-      {"id": "20", "date": "2025-02-01", "amount": -129569, "splits": [{"category_id": 3, "amount": -129569}]},
-      {"id": "21", "date": "2025-03-01", "amount": -74966, "splits": [{"category_id": 3, "amount": -74966}]},
-      {"id": "22", "date": "2025-01-01", "amount": -2439, "splits": [{"category_id": 6, "amount": -2439}]},
-      {"id": "23", "date": "2024-09-01", "amount": -20295, "splits": [{"category_id": 4, "amount": -20295}]},
-      {"id": "24", "date": "2024-10-01", "amount": -34896, "splits": [{"category_id": 4, "amount": -34896}]},
-      {"id": "25", "date": "2024-11-01", "amount": -37414, "splits": [{"category_id": 4, "amount": -37414}]},
-      {"id": "26", "date": "2024-12-01", "amount": -7974, "splits": [{"category_id": 4, "amount": -7974}]},
-      {"id": "27", "date": "2025-01-01", "amount": -37382, "splits": [{"category_id": 4, "amount": -37382}]},
-      {"id": "28", "date": "2025-02-01", "amount": -41233, "splits": [{"category_id": 4, "amount": -41233}]},
-      {"id": "29", "date": "2025-03-01", "amount": -28853, "splits": [{"category_id": 4, "amount": -28853}]},
-      {"id": "30", "date": "2024-10-01", "amount": -1141, "splits": [{"category_id": 5, "amount": -1141}]},
-      {"id": "31", "date": "2025-01-01", "amount": -28031, "splits": [{"category_id": 5, "amount": -28031}]},
-      {"id": "32", "date": "2024-09-01", "amount": -11728, "splits": [{"category_id": 1, "amount": -11728}]},
-      {"id": "33", "date": "2024-10-01", "amount": -11728, "splits": [{"category_id": 1, "amount": -11728}]},
-      {"id": "34", "date": "2024-11-01", "amount": -11728, "splits": [{"category_id": 1, "amount": -11728}]},
-      {"id": "35", "date": "2024-12-01", "amount": -11728, "splits": [{"category_id": 1, "amount": -11728}]},
-      {"id": "36", "date": "2025-01-01", "amount": -11728, "splits": [{"category_id": 1, "amount": -11728}]},
-      {"id": "37", "date": "2025-02-01", "amount": -11728, "splits": [{"category_id": 1, "amount": -11728}]},
-      {"id": "38", "date": "2025-03-01", "amount": -11478, "splits": [{"category_id": 1, "amount": -11478}]},
-    ];
+    this.transactions = trn_json ? JSON.parse(trn_json) : [];
 
-    this.legacy_trn_splits = {
-      "00002061470000036100": [{"category_id": 2, "amount": -3123}, {"category_id": 3, "amount": -74000}],
-      "00002073640000034703": [{"category_id": 2, "amount": -3513}, {"category_id": 3, "amount": -109322}],
-      "00002095980000039276": [{"category_id": 2, "amount": -3904}, {"category_id": 3, "amount": -105164}],
-      "00002085410000035679": [{"category_id": 2, "amount": -781}, {"category_id": 3, "amount": -99858}],
-      "00002073640000034702": [{"category_id": 2, "amount": -725}, {"category_id": 3, "amount": -21277}],
-      "00002061470000036099": [{"category_id": 2, "amount": -644}, {"category_id": 3, "amount": -14405}],
-      "00002062530000035450": [{"category_id": 3, "amount": 80}],
-      "00002095980000039275": [{"category_id": 2, "amount": -806}, {"category_id": 3, "amount": -20471}],
-      "00002085410000035678": [{"category_id": 2, "amount": -161}, {"category_id": 3, "amount": -19436}],
-    };
+    let non_recurring = [
+      'SAFEWAY FUEL',
+      'SUPER 1 FOODS',
+      'COSTCO GAS',
+      'MICHAELS',
+      'CTCMATH PENNANT',
+      'PAOLA BROWN',
+      'PANHANDLE CONE',
+      'TRADER JOE',
+      'CHEFSTORE',
+      'AMAZON MKTPL',
+      'AMAZON.COM',
+      'COSTCO WHSE',
+      'THE LONG EAR',
+      'POSTAL ANNEX',
+      'CICCARELLI',
+      'QUEST DIAGNOSTICS',
+      'UNION ROASTERS',
+      'UNION COFFEE',
+      'FRED-MEYER',
+      'HALLMARK',
+      'STAPLES',
+      'CAFE RIO',
+      'LOWES',
+      'ALL OF LIFE CHURCH',
+      'ROSS STORES',
+      'ROGERS',
+      'XBOX',
+      'METRO EXPRESS CAR WASH',
+      'COSTCO GAS',
+      'CYT NORTH IDAHO',
+      'NESPRESSO',
+      'TARGET',
+      'DROPBOX',
+      'WESTSIDE',
+      'NATURAL GROCERS',
+      'DRINK LMNT',
+      'CRAFTED TAP HOUSE',
+      'TOP THIS',
+      'ROCHELLE@CDA HAIR',
+      'GROUNDED SAGE',
+      'DOMA CAFE',
+      'AMWAY',
+      'PRIMALLY PURE',
+      'WALMART',
+      'APPLE.COM/BILL',
+      'PRIME VIDEO',
+      'APPLEBEES',
+      'SPRINGDASH',
+      'CULTURA',
+      'CLEARLY FILTERED',
+      'PETCO',
+      'EXTREMEGRILLED',
+      'STONEMAIER',
+      'BOOKS & COMPANY',
+      'ZAPPOS',
+      'PEACOCK',
+      'AMAZON RETA',
+      'DIRECTNIC',
+      'MOSHLIFE',
+      'KINDLE',
+      'INLAND MAMA',
+      'VITACOST',
+      'KOOTENAI COUNTY',
+      'GOVPROS',
+      'TERRE COFFEE',
+    ].map(pattern => ({pattern, category_id: 2}));
+
+    let recurring = [
+      'GOOGLE WORKSPACE',
+      'STORAGE STAR',
+      'JEMS.ORG',
+      'AUDIBLE',
+      'CITY OF COEUR D',
+      'DP SERVICE FEE UTILITY',
+      'NETFLIX',
+      'TITHE.LY',
+      'MSI INSURANCE',
+      'SPOTIFY',
+      'AG NATIONAL OFFICE',
+      'CAMPUS SALT',
+      'COMPASSION',
+      'DISNEY PLUS',
+      'LOOPMASTERS',
+      'SWITCHFOOT',
+      'COVENANT EYES',
+      'TRACFONE',
+    ].map(pattern => ({pattern, category_id: 1}));
+
+    let house = [
+      'TAM\'S TRAVELING TO',
+      'KOOTENAI ELECTRIC',
+    ].map(pattern => ({pattern, category_id: 3}));
+
+    this.auto_cat_rules = non_recurring.concat(recurring, house);
+
+    // TEMP! this will blow away user's categorization work
+    // ONLY do this temporarily to test new auto-cat rules
+    this.autoCategorize(this.transactions);
 
     this.el.innerHTML = `
       <div id="filedrag" style="font-weight: bold; text-align: center; padding: 1em 0; margin: 1em 0; color: #555; border: 2px dashed #555; border-radius: 7px; cursor: default">
@@ -79,44 +128,11 @@ class App {
     this.month_names = {'09': 'September', '10': 'October', '11': 'November', '12': 'December', '01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June', '07': 'July', '08': 'August'};
 
     this.categories = [
-      {id: 0, name: 'Regular Giving', type: 'income'},
-      {id: 9, name: 'One-Time Giving', type: 'income'},
+      {id: 0, name: 'Income', type: 'income'},
       {id: -1, name: '[Uncategorized]', type: 'expense'},
-      {id: 2, name: 'Bookkeeper', type: 'expense'},
-      {id: 3, name: 'Director', type: 'expense'},
-      {id: 10, name: 'Associate Director', type: 'expense'},
-      {id: 6, name: 'Events', type: 'expense'},
-      {id: 4, name: 'Food', type: 'expense'},
-      {id: 5, name: 'Newsletter', type: 'expense'},
-      {id: 1, name: 'Online Services', type: 'expense'},
-      {id: 7, name: 'Promotional', type: 'expense'},
-      {id: 8, name: 'Training & Materials', type: 'expense'},
-    ];
-
-    this.auto_cat_rules = [
-      {pattern: "BANKCARD 1161 MTOT", category_id: 0},
-      {pattern: "DEPOSIT BRANCH 0362", category_id: 0},
-      {pattern: "INTEREST PAYMENT", category_id: 0},
-      {pattern: "RELIAFUND INC DEPOSIT", category_id: 0},
-      {pattern: "GIVING FIRE ACH FEES", category_id: 1},
-      {pattern: "GOOGLE *GSUITE", category_id: 1},
-      {pattern: "GOOGLE GSUITE", category_id: 1},
-      {pattern: "GOOGLE WORKSPACE", category_id: 1},
-      {pattern: "GUSTO FEE", category_id: 1},
-      {pattern: "GUSTO TLR", category_id: 1},
-      {pattern: "QUICKEN INC", category_id: 1},
-      {pattern: "BHAM TECH FOOD SERVICE", category_id: 4},
-      {pattern: "HANA TERIYAKI", category_id: 4},
-      {pattern: "MAC FOOD PAVI", category_id: 4},
-      {pattern: "PAPA JOHN", category_id: 4},
-      {pattern: "SAFEWAY", category_id: 4},
-      {pattern: "SUBWAY", category_id: 4},
-      {pattern: "TACO TIME", category_id: 4},
-      {pattern: "MI RANCHO", category_id: 4},
-      {pattern: "COSTCO WHSE", category_id: 4},
-      {pattern: "PANDA EXPRESS", category_id: 4},
-      {pattern: "TIMEKEEPERS", category_id: 5},
-      {pattern: "USPS PO", category_id: 5},
+      {id: 1, name: 'Recurring', type: 'expense'},
+      {id: 2, name: 'Non-recurring', type: 'expense'},
+      {id: 3, name: 'House', type: 'expense'},
     ];
   }
 
@@ -160,7 +176,7 @@ class App {
 
     console.log('file dropped:', file.name, file.type, file.size);
     let reader = new FileReader();
-    reader.onload = this.onFileLoad.bind(null, reader, file);
+    reader.onload = this.onFileLoad.bind(this, reader, file);
     reader.readAsText(file);
   }
 
@@ -186,8 +202,12 @@ class App {
     for (let new_trn of new_transactions) {
       let old_trn = idx[new_trn.id];
       if (old_trn) {
-        if (old_trn.date != new_trn.date || old_trn.amount != new_trn.amount || old_trn.description != new_trn.description)
-          console.warning(`Did not import updated transaction date/amount/description (${new_trn.id}): ${new_trn.date} / ${new_trn.amount} / ${new_trn.description}`);
+        let date_changed = old_trn.date != new_trn.date;
+        let amt_changed = old_trn.amount != new_trn.amount;
+        let desc_changed = old_trn.description != new_trn.description;
+        if (date_changed || amt_changed || desc_changed) {
+          console.warn(`Did not import updated transaction ${date_changed ? `date ("${old_trn.date}"->"${new_trn.date}"), ` : ''}${amt_changed ? `amount ("${old_trn.amount}"->"${new_trn.amount}"), ` : ''}${desc_changed ? `description ("${old_trn.description}"->"${new_trn.description}")` : ''}`);
+        }
       }
       else {
         this.transactions.push(new_trn);
@@ -196,27 +216,28 @@ class App {
     }
 
     this.transactions.sort((a, b) => a.date == b.date ? 0 : (a.date < b.date ? -1 : 1));
-    
-    for (let trn of add_trns) {
-      if (trn.id in this.legacy_trn_splits) {
-        trn.splits = this.legacy_trn_splits[trn.id];
-      }
-      else {
-        // the first rule that matches is the one that "wins"
-        for (let rule of this.auto_cat_rules) {
-          if (trn.description.toUpperCase().includes(rule.pattern)) {
-            trn.splits = [{category_id: rule.category_id, amount: trn.amount}];
-            break;
-          }
-        }
-      }
-    }
+
+    // ONLY auto-categorize added transactions
+    // because it can blow away user's previous categorization work
+    this.autoCategorize(add_trns);
 
     this.saveTransactions();
 
     this.navigate();
     return;
   };
+
+  autoCategorize(trns) {
+    for (let trn of trns) {
+      // the first rule that matches is the one that "wins"
+      for (let rule of this.auto_cat_rules) {
+        if (trn.description.toUpperCase().includes(rule.pattern)) {
+          trn.splits = [{category_id: rule.category_id, amount: trn.amount}];
+          break;
+        }
+      }
+    }
+  }
 
   saveTransactions() {
     this.localStorage.setItem('transactions', JSON.stringify(this.transactions, null, 2));
@@ -352,6 +373,17 @@ function capitalize(str) {
 function toUSDate(iso_date) {
   let date_parts = iso_date.split('-');
   return `${date_parts[1]}/${date_parts[2]}/${date_parts[0]}`;
+}
+
+function toISODate(dt) {
+  return [dt.getFullYear(), pad2(dt.getMonth()+1), pad2(dt.getDate())].join('-');
+}
+
+function pad2(n) {
+  if (n < 10)
+    return `0${n}`;
+  else
+    return n;
 }
 
 function filterRecords(records, filters) {
