@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Financial Tests</title>
+    <link rel="stylesheet" href="vendor/mocha.css" />
+  </head>
+  <body id="mocha">
+    <script src="vendor/mocha.js"></script>
+    <script>
+      mocha.setup({ui: 'bdd'});
+    </script>
+    <script src="vendor/underscore.js"></script>
+    <script src="vendor/sax.js"></script>
+    <script src="vendor/popper.min.js"></script>
+    <script src="vendor/bootstrap-5.3.8.js"></script>
+    
+    <script src="app.js"></script>
+    <script src="split-modal.js"></script>
+    <script src="tests/modal-tests.js"></script>
+    <script>
+      mocha.run();
+    </script>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-  <title>Financial Tracking &amp; Reports</title>
+  <title>Financial Tracking &amp; Report</title>
   <link href="vendor/bootstrap-5.3.8.css" rel="stylesheet">
   <style>
     body { margin: 1em }
@@ -12,11 +12,17 @@
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-    /*
-      this can't be done with inline CSS; we can define a data-style-hover attribute (or just style-hover?)
-      this could be implemented via manual onMouseOver or via generating a unique classname -- maybe that'd be better for the other inline styles too?
-    */
-    #filedrag.hover {
+    .file-drag {
+      font-weight: bold;
+      text-align: center;
+      padding: 1em 0;
+      margin: 1em 0;
+      color: #555;
+      border: 2px dashed #555;
+      border-radius: 7px;
+      cursor: default;
+    }
+    .file-drag.hover {
       color: #2672EC;
       border-color: #2672EC;
       border-style: solid;
@@ -24,7 +30,7 @@
     }
     col.action-btn { width: 200px }
     @media print {
-      #filedrag { display: none }
+      .file-drag { display: none }
       .btn { display: none }
       td.action-btn { display: none }
       col.action-btn { width: 100% !important }
@@ -46,34 +52,331 @@
     }
   </style>
   <script src="vendor/underscore.js"></script>
-  <script src="vendor/sax.js"></script>
-  <script src="vendor/popper.min.js"></script>
-  <script src="vendor/bootstrap-5.3.8.js"></script>
 </head>
 <body>
+  <div id="accounting_file" class="file-drag">
+    Drop the <code>accounting.csv</code> file (exported from Wave) here
+  </div>
   <div id="report">
   </div>
-  <div id="filedrag" style="font-weight: bold; text-align: center; padding: 1em 0; margin: 1em 0; color: #555; border: 2px dashed #555; border-radius: 7px; cursor: default">
-    Drop .OFX or .QFX file here
-  </div>
+  <script>
+    document.getElementById('accounting_file').addEventListener('dragover', fileDragHover);
+    document.getElementById('accounting_file').addEventListener('dragleave', fileDragHover);
+    document.getElementById('accounting_file').addEventListener('drop', fileSelectHandler);
 
-  <div class="modal fade" id="split_modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 id="split_modal_title" class="modal-title fs-5">Modal title</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div id="split_modal_body" class="modal-body">
-          ...
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" id="split_modal_submit" class="btn btn-primary">Save changes</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script src="financial.js"></script>
+    window.transactions = [];
+    window.year = new Date().getFullYear();
+    window.end_balance_cents = null;
+    window.categories = [
+      {id: 0, name: 'Regular Giving', type: 'income'},
+      {id: 9, name: 'One-Time Giving', type: 'income'},
+      {id: -1, name: '[Uncategorized Expense]', type: 'uncategorized_expense'},
+      {id: -2, name: '[Uncategorized Income]', type: 'uncategorized_income'},
+      {id: 2, name: 'Bookkeeper', type: 'expense'},
+      {id: 3, name: 'Director', type: 'expense'},
+      {id: 10, name: 'Associate Director', type: 'expense'},
+      {id: 6, name: 'Events', type: 'expense'},
+      {id: 4, name: 'Food', type: 'expense'},
+      {id: 5, name: 'Newsletter', type: 'expense'},
+      {id: 1, name: 'Online Services', type: 'expense'},
+      {id: 7, name: 'Promotional', type: 'expense'},
+      {id: 8, name: 'Training & Materials', type: 'expense'},
+    ];
+
+    function fileDragHover(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (e.type == 'dragover') {
+        e.target.classList.add('hover');
+      } else {
+        e.target.classList.remove('hover');
+      }
+    }
+
+    function fileSelectHandler(e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      // fetch FileList object
+      let file = (e.target.files || e.dataTransfer.files)[0];
+
+      console.log('file dropped:', file.name, file.type, file.size);
+      if (!/\.csv$/i.test(file.name))
+        return alert(`File name "${file.name}" does not end in .csv`);
+      
+      // hide accounting file drop area, since we only need to drop once
+      document.getElementById('accounting_file').style.display = 'none';
+
+      let reader = new FileReader();
+      reader.onload = onFileLoad.bind(this, reader, file);
+      reader.readAsText(file);
+    }
+
+    async function onFileLoad(reader, file, e) {
+      let text = reader.result;
+
+      let rows = parseCSV(text);
+      let headers = rows.shift();
+      let col_map = {
+        trn_id: 'Transaction ID',
+        date: 'Transaction Date',
+        desc: 'Transaction Description',
+        amt: 'Amount (One column)',
+        acct_type: 'Account Type',
+        acct_name: 'Account Name',
+      };
+
+      let ix = {};
+      let missing_cols = [];
+      for (let key in col_map) {
+        ix[key] = headers.indexOf(col_map[key]);
+        if (ix[key] === -1)
+          missing_cols.push(col_map[key]);
+      }
+      if (missing_cols.length)
+        alert(`Columns missing in file ${file.name}: ${missing_cols.join(', ')}`);
+
+      let acct_type_to_cat_type = {
+        'Cash and Bank': 'bank',
+        'Uncategorized Income': 'uncategorized_income',
+        'Uncategorized Expense': 'uncategorized_expense',
+        'Income': 'income',
+        'Operating Expense': 'expense',
+      };
+
+      transactions = [];
+      for (let row of rows) {
+        if (!(row[ix.acct_type] in acct_type_to_cat_type)) {
+          return alert(`Unknown Account Type: ${row[ix.acct_type]}`);
+        }
+
+        transactions.push({
+          trn_id: row[ix.trn_id],
+          date: row[ix.date],
+          desc: row[ix.desc],
+          amt_cents: Math.round(parseFloat(row[ix.amt]) * 100),
+          cat_name: row[ix.acct_name],
+          cat_type: acct_type_to_cat_type[row[ix.acct_type]]
+        });
+      }
+
+      // // don't import anything before the legacy cutoff (April 2025)
+      // // since these are in the legacy summary data
+      // new_transactions = new_transactions.filter(trn => trn.date >= this.legacy_cutoff);
+
+      // filter out redundant 'bank'-type transactions in double-entry accounting
+      transactions = _.sortBy(transactions, 'date').filter(t => t.cat_type != 'bank');
+      renderReport();
+    };
+
+    let month_names = {'09': 'September', '10': 'October', '11': 'November', '12': 'December', '01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June', '07': 'July', '08': 'August'};
+
+    function renderReport() {
+      document.title = `${year} Annual Overview`;
+      let html = `<h3>${document.title}`;
+      html += '<div class="btn-group" role="group" aria-label="year navigation buttons" style="margin-left: 1rem">';
+      html += `  <button onclick="year--; renderReport();" class="btn btn-outline-secondary">← Previous Year</button>`;
+      html += `  <button onclick="year++; renderReport();" class="btn btn-outline-secondary">Next Year →</button>`;
+      html += '</div>';
+      html += '</h3>';
+
+      html += '<table>';
+      html += '<tr>';
+      html += '<th></th>'; // empty cell in the top-left corner
+
+      // school year months:
+      // let months = [`${year_1}-09`, `${year_1}-10`, `${year_1}-11`, `${year_1}-12`, `${year_2}-01`, `${year_2}-02`, `${year_2}-03`, `${year_2}-04`, `${year_2}-05`, `${year_2}-06`, `${year_2}-07`, `${year_2}-08`];
+      let months = [`${year}-01`, `${year}-02`, `${year}-03`, `${year}-04`, `${year}-05`, `${year}-06`, `${year}-07`, `${year}-08`, `${year}-09`, `${year}-10`, `${year}-11`, `${year}-12`];
+      let year_records = transactions.filter(r => months.includes(getYearMonth(r.date)));
+
+      for (let month of months) {
+        let month_name = month_names[month.slice(-2)];
+        html += `<th><b>${month_name}</b></th>`;
+      }
+      html += '</tr>';
+
+      let totals = {income: {}, expense: {}};
+      for (let cat_type of ['income', 'expense']) {
+        html += `<tr><th class="sidebar"><u>${capitalize(cat_type)}</u></th></tr>`;
+        for (let cat of categories.filter(cat => cat.type == cat_type)) {
+          html += `<tr><th class="category">${cat.name}</th>`;
+          for (let month of months) {
+            let records = filterRecords(year_records, {month, cat_name: cat.name});
+            let cents = sumAmounts(records);
+
+            if (!totals[cat_type][month])
+              totals[cat_type][month] = 0;
+            totals[cat_type][month] += cents;
+            html += `<td class="amt">${displayCents(cents)}</td>`;
+          }
+          html += '</tr>';
+        }
+
+        html += '<tr><th class="sidebar">Total</th>';
+        for (let month of months) {
+          html += `<td class="amt"><b>${displayCents(totals[cat_type][month])}</b></td>`;
+        }
+        html += '</tr>';
+        html += '<tr><th class="separator"></th></tr>';
+      }
+
+      html += '<tr><th class="sidebar">Profit / Loss</th>';
+      for (let month of months) {
+        html += `<td class="amt"><b>${displayCents(totals.income[month] - totals.expense[month])}</b></td>`;
+      }
+      html += '</tr>';
+
+      if (end_balance_cents != null) {
+        let all_trn_since_start = transactions.filter(t => t.date >= year + '-01-01');
+        // the starting balance is the end balance minus income since start of year, plus expenses since start of year
+        let income_since_start = sumAmounts(all_trn_since_start.filter(t => t.cat_type.endsWith('income')));
+        let expense_since_start = sumAmounts(all_trn_since_start.filter(t => t.cat_type.endsWith('expense')));
+
+        let balance_cents = end_balance_cents - income_since_start + expense_since_start;
+
+        html += '<tr><th class="separator"></th></tr>';
+
+        html += '<tr><th class="sidebar">Balance</th>';
+        for (let month of months) {
+          if (totals.income[month] || totals.expense[month]) {
+            balance_cents += totals.income[month] - totals.expense[month];
+            html += `<td class="amt"><b>${displayCents(balance_cents)}</b></td>`;
+          }
+          else {
+            // empty balance cell for months that aren't populated with income/expenses yet
+            html += `<td class="amt"></td>`;
+          }
+        }
+        html += '</tr>';
+      }
+      
+      html += '</table>';
+
+      if (end_balance_cents == null) {
+        html += `<div id="balance_file" class="file-drag" style="font-weight: bold; text-align: center; padding: 1em 0; margin: 1em 0; color: #555; border: 2px dashed #555; border-radius: 7px; cursor: default">
+          To see balances, drop the <code>Balance Sheet</code> .csv file (exported from Wave) here
+        </div>`;
+      }
+      document.getElementById('report').innerHTML = html;
+
+      if (end_balance_cents == null) {
+        document.getElementById('balance_file').addEventListener('dragover', fileDragHover);
+        document.getElementById('balance_file').addEventListener('dragleave', fileDragHover);
+        document.getElementById('balance_file').addEventListener('drop', balanceFileSelectHandler);
+      }
+    }
+
+    function balanceFileSelectHandler(e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      // fetch FileList object
+      let file = (e.target.files || e.dataTransfer.files)[0];
+
+      console.log('file dropped:', file.name, file.type, file.size);
+      if (!/\.csv$/i.test(file.name))
+        return alert(`File name "${file.name}" does not end in .csv`);
+      if (!file.name.includes('Balance Sheet'))
+        return alert(`File name "${file.name}" does not include 'Balance Sheet'`);
+      
+      // hide balance file drop area, since we only need to drop once
+      document.getElementById('balance_file').style.display = 'none';
+
+      let reader = new FileReader();
+      reader.onload = onBalanceFileLoad.bind(this, reader, file);
+      reader.readAsText(file);
+    }
+    
+    async function onBalanceFileLoad(reader, file, e) {
+      let text = reader.result;
+      let rows = parseCSV(text);
+      let last_row = _.last(rows);
+      if (last_row[last_row.length - 2] != 'Total Equity') {
+        return alert('Unexpected Balance Sheet CSV contents (expected "Total Equity" as 2nd-to-last column of last row)');
+      }
+      let end_balance = _.last(last_row);
+      end_balance = end_balance.replace('$', '').replace(/,/g, '');
+      end_balance_cents = Math.round(parseFloat(end_balance) * 100);
+      renderReport();
+    }
+
+    function sumAmounts(records) {
+      let total = 0;
+      for (let record of records)
+        total += record.amt_cents;
+      
+      return total;
+    }
+
+
+    function displayCents(cents) {
+      if (!cents)
+        return '';
+      let val = cents / 100;
+      let str = val.toFixed(2);
+      if (val >= 1000)
+        str = `${str.slice(0, -6)},${str.slice(-6)}`;
+      return str;
+    }
+
+    function getYearMonth(dt_str) {
+      return dt_str.slice(0, 7);
+    }
+
+    function filterRecords(records, filters) {
+      if (filters.month)
+        records = records.filter(r => getYearMonth(r.date) == filters.month);
+      
+      if ('cat_name' in filters)
+        records = _.where(records, {cat_name: filters.cat_name});
+
+      return records;
+    }
+
+    function capitalize(str) {
+      return str[0].toUpperCase() + str.slice(1);
+    }
+
+
+
+    // Source - https://stackoverflow.com/a/14991797
+    // Posted by Trevor Dixon, modified by community. See post 'Timeline' for change history
+    // Retrieved 2026-10-03, License - CC BY-SA 4.0
+    function parseCSV(str) {
+      const arr = [];
+      let quote = false;  // 'true' means we're inside a quoted field
+
+      // Iterate over each character, keep track of current row and column (of the returned array)
+      for (let row = 0, col = 0, c = 0; c < str.length; c++) {
+        let cc = str[c], nc = str[c+1];        // Current character, next character
+        arr[row] = arr[row] || [];             // Create a new row if necessary
+        arr[row][col] = arr[row][col] || '';   // Create a new column (start with empty string) if necessary
+
+        // If the current character is a quotation mark, and we're inside a
+        // quoted field, and the next character is also a quotation mark,
+        // add a quotation mark to the current column and skip the next character
+        if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+
+        // If it's just one quotation mark, begin/end quoted field
+        if (cc == '"') { quote = !quote; continue; }
+
+        // If it's a comma and we're not in a quoted field, move on to the next column
+        if (cc == ',' && !quote) { ++col; continue; }
+
+        // If it's a newline (CRLF) and we're not in a quoted field, skip the next character
+        // and move on to the next row and move to column 0 of that new row
+        if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+
+        // If it's a newline (LF or CR) and we're not in a quoted field,
+        // move on to the next row and move to column 0 of that new row
+        if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+        if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+
+        // Otherwise, append the current character to the current column
+        arr[row][col] += cc;
+      }
+      return arr;
+    }
+  </script>
 </body>
 </html>
